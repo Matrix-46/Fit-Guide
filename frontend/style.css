@@ -1,0 +1,1569 @@
+/* frontend/style.css (Modern Luxury Theme) */
+
+/* --- Global Resets and Base Styles --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Montserrat', 'Segoe UI', Helvetica, Arial, sans-serif;
+    background-color: #1a1a1a;
+    /* Dark charcoal base */
+    color: #e0e0e0;
+    /* Off-white text for readability */
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('assets/background.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+    overflow-x: hidden;
+}
+
+/* --- Header --- */
+header {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    /* Subtle dark gradient */
+    color: #ffffff;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    /* For nav positioning */
+    border-bottom: 1px solid #333;
+}
+
+header h1#headerTitle {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+header h1#headerTitle:hover {
+    opacity: 0.9;
+}
+
+header nav {
+    position: absolute;
+    right: 25px;
+}
+
+header nav button#logoutBtn {
+    background-color: #993333;
+    /* Muted red */
+    color: white;
+    border: none;
+    padding: 0.6em 1.2em;
+    cursor: pointer;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+header nav button#logoutBtn:hover {
+    background-color: #802020;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Mbackground-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('assets/background.png');n Content --- */
+main {
+    flex-grow: 1;
+    padding: 25px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* --- Card Styling (General) --- */
+.card {
+    background-color: rgba(40, 44, 52, 0.95);
+    /* Dark card background */
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    padding: 25px 30px;
+    margin-bottom: 25px;
+    border: 1px solid #444;
+    /* Subtle border */
+    width: 100%;
+    max-width: 500px;
+    /* Default for auth cards */
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    display: none;
+}
+
+.card.view-active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.card h2 {
+    color: #c0a062;
+    /* Gold accent for titles */
+    margin-bottom: 20px;
+    font-weight: 600;
+    padding-bottom: 12px;
+    text-align: center;
+    font-size: 1.5rem;
+    border-bottom: 1px solid #555;
+}
+
+/* --- View Specific Styles --- */
+.view {
+    width: 100%;
+}
+
+/* --- Authentication Flow Views --- */
+.auth-card {
+    margin-top: 5vh;
+}
+
+#authChoiceView h2 {
+    border-bottom: none;
+    margin-bottom: 15px;
+}
+
+#authChoiceView p {
+    margin-bottom: 25px;
+    color: #a0a0a0;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.auth-choice-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.auth-choice-buttons button.auth-choice-button {
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    background-color: #c0a062;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.auth-choice-buttons button.auth-choice-button:hover {
+    background-color: #d4b277;
+    transform: translateY(-1px);
+}
+
+.back-to-auth-choice,
+.back-button {
+    display: inline-block;
+    margin-bottom: 15px;
+    padding: 8px 15px;
+    background-color: #555;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.back-to-auth-choice:hover,
+.back-button:hover {
+    background-color: #666;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: #c0a062;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.9em;
+    display: inline;
+}
+
+.link-button:hover {
+    color: #d4b277;
+}
+
+#loginView form,
+#registerView form {
+    margin-top: 10px;
+}
+
+/* --- Registration Form - Cuisine Options --- */
+label[for="regPreferredCuisinesContainer"],
+#editProfileForm label[for="editProfileCuisinesContainer"] {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: #a0a0a0;
+    font-weight: 500;
+    text-align: left;
+}
+
+.cuisine-options-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #555;
+    border-radius: 5px;
+    margin-bottom: 12px;
+    background-color: #333;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.cuisine-options-container label {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    background-color: #444;
+    border: 1px solid #555;
+}
+
+.cuisine-options-container label:hover {
+    background-color: #555;
+}
+
+.cuisine-options-container input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: #c0a062;
+    width: 15px;
+    height: 15px;
+    vertical-align: middle;
+}
+
+
+/* Form Elements */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="email"],
+select {
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border: 1px solid #555;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    background-color: #333;
+    color: #e0e0e0;
+    width: 100%;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #c0a062;
+    box-shadow: 0 0 0 0.1rem rgba(192, 160, 98, 0.3);
+}
+
+button[type="submit"] {
+    background-color: #c0a062;
+    color: #1a1a1a;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+    width: 100%;
+    margin-top: 8px;
+}
+
+button[type="submit"]:hover:not(:disabled) {
+    background-color: #d4b277;
+    transform: translateY(-1px);
+}
+
+button:disabled {
+    background-color: #555;
+    color: #888;
+    cursor: not-allowed;
+    transform: none;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background-color: #444;
+    margin: 18px 0;
+}
+
+/* Message Styling */
+.message {
+    text-align: center;
+    margin-top: 12px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: none;
+}
+
+.message.error {
+    color: #d49a9a;
+    background-color: #4a2b2b;
+    border: 1px solid #8a4b4b;
+}
+
+.message.success {
+    color: #a3d4a3;
+    background-color: #2b4a2b;
+    border: 1px solid #4b8a4b;
+}
+
+
+/* --- Dashboard Section --- */
+#dashboardSection {
+    max-width: 1200px;
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    display: none;
+}
+
+#dashboardSection.view-active {
+    display: block;
+    opacity: 1;
+    transform: scale(1);
+}
+
+#dashboardHeader {
+    margin-bottom: 20px;
+}
+
+h2.dashboard-welcome {
+    text-align: center;
+    font-size: 1.7rem;
+    color: #ffffff;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+    margin-bottom: 5px;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+#dashboardApiMessage {
+    color: white;
+    background-color: transparent;
+    text-align: center;
+    margin-top: 5px;
+    font-weight: 500;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+}
+
+/* Dashboard Overview Grid & Detail Pages */
+#dashboardOverviewPage,
+#dashboardDetailContent {
+    width: 100%;
+}
+
+#dashboardOverviewPage .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.info-card {
+    background-color: rgba(40, 44, 52, 0.9);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+    transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.info-card h3 {
+    font-size: 1.2rem;
+    color: #c0a062;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dotted #666;
+}
+
+.info-card p {
+    font-size: 0.95rem;
+    color: #a0a0a0;
+    margin-bottom: 8px;
+}
+
+.info-card p.view-details-link {
+    font-size: 0.9rem;
+    color: #d4b277;
+    text-align: right;
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+.dashboard-nav-item {
+    cursor: pointer;
+}
+
+.dashboard-nav-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    border-color: #c0a062;
+}
+
+/* Admin Panel Card Specifics */
+#adminPanelCard {
+    background-color: rgba(60, 50, 35, 0.9);
+    border-color: #c0a062;
+}
+
+#adminPanelCard h3 {
+    color: #d4b277;
+}
+
+/* Dashboard Detail Pages Specifics */
+.dashboard-page {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+    width: 100%;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    display: none;
+}
+
+.dashboard-page.active-detail-page {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.info-card-detail {
+    margin-top: 10px;
+}
+
+.info-card-detail h3 {
+    font-size: 1.6rem;
+    color: #c0a062;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #555;
+    text-align: left;
+}
+
+/* Profile Page Specifics & Edit Form */
+#profilePage .profile-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#profilePage .profile-header-actions h3 {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+#editProfileForm label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #a0a0a0;
+}
+
+#editProfileForm input[type="number"],
+#editProfileForm select {
+    width: 100%;
+    padding: 9px 12px;
+    margin-bottom: 10px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    background-color: #333;
+    color: #e0e0e0;
+}
+
+#editProfileForm .cuisine-options-container {
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+#editProfileForm button.action-button {
+    margin-top: 15px;
+    width: auto;
+    padding: 10px 20px;
+}
+
+#editProfileForm button.action-button.secondary {
+    background-color: #555;
+    margin-left: 10px;
+}
+
+#editProfileForm button.action-button.secondary:hover {
+    background-color: #666;
+}
+
+#editProfileMessage {
+    margin-top: 15px;
+}
+
+#profileDisplayView p {
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+#profileDisplayView p strong {
+    font-weight: 500;
+    color: #e0e0e0;
+    min-width: 150px;
+    display: inline-block;
+}
+
+#profileDisplayView p span {
+    font-weight: 400;
+    color: #a0a0a0;
+    margin-left: 5px;
+}
+
+
+/* Diet Chart & Instructions */
+button.action-button {
+    display: inline-block;
+    margin: 10px 5px 15px 5px;
+    padding: 10px 18px;
+    background-color: #c0a062;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+button.action-button:hover:not(:disabled) {
+    background-color: #d4b277;
+}
+
+.diet-instructions {
+    background-color: #2f343c;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.diet-instructions h4 {
+    color: #c0a062;
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+.diet-instructions ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin-bottom: 0;
+}
+
+.diet-instructions li {
+    margin-bottom: 6px;
+    color: #a0a0a0;
+    line-height: 1.5;
+}
+
+.diet-instructions li strong {
+    color: #e0e0e0;
+}
+
+.diet-instructions em {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+
+#weeklyDietPlanTabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #555;
+}
+
+.day-tab {
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background-color: #444;
+    color: #e0e0e0;
+    border: 1px solid #666;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.day-tab:hover {
+    background-color: #555;
+    border-color: #888;
+}
+
+.day-tab.active {
+    background-color: #c0a062;
+    color: #1a1a1a;
+    border-color: #c0a062;
+    font-weight: 600;
+}
+
+#dietChartContainer .meal-type-section {
+    margin-bottom: 18px;
+    padding: 15px;
+    background-color: #333;
+    border-radius: 6px;
+    border: 1px solid #444;
+}
+
+#dietChartContainer .meal-type-section h5 {
+    font-size: 1.15rem;
+    color: #c0a062;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed #666;
+}
+
+#dietChartContainer ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+#dietChartContainer li {
+    background-color: #444;
+    color: #a0a0a0;
+    padding: 10px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    border-left: 3px solid #c0a062;
+    font-size: 0.9rem;
+}
+
+#dietChartContainer li strong {
+    color: #e0e0e0;
+    display: block;
+    margin-bottom: 2px;
+    font-size: 1rem;
+}
+
+#dietChartContainer li small {
+    color: #888;
+    font-size: 0.85rem;
+    display: block;
+    margin-top: 3px;
+}
+
+/* Workout List and Timer */
+#workoutListContainer ul {
+    list-style: none;
+    padding: 0;
+}
+
+#workoutListContainer li {
+    background-color: #333;
+    color: #a0a0a0;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #c0a062;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#workoutListContainer li strong {
+    color: #e0e0e0;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 1.05rem;
+}
+
+#workoutListContainer button.start-workout-btn {
+    margin-top: 8px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    background-color: #c0a062;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#workoutListContainer button.start-workout-btn:hover {
+    background-color: #d4b277;
+}
+
+#workoutTimer {
+    margin-top: 20px;
+    padding: 18px;
+    background-color: #2f343c;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #444;
+}
+
+#workoutTimer h4 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: #c0a062;
+}
+
+#timerDisplay {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #e0e0e0;
+    margin: 6px 0 15px 0;
+    display: block;
+}
+
+#workoutTimer button {
+    margin: 5px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    background-color: #c0a062;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#workoutTimer button:hover:not(:disabled) {
+    background-color: #d4b277;
+}
+
+#workoutTimerMessage {
+    text-align: center;
+    font-weight: 500;
+}
+
+
+/* Pose Detection */
+#posePage select#exerciseSelectForPose {
+    margin-bottom: 12px;
+    width: 100%;
+    max-width: 300px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.webcam-container {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    margin: 12px auto;
+    border: 2px dashed #666;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #222;
+    aspect-ratio: 4 / 3;
+}
+
+#webcamFeed,
+#poseCanvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+}
+
+#poseCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#poseFeedback {
+    font-weight: 500;
+    min-height: 22px;
+    margin-top: 10px;
+    font-size: 0.95rem;
+    padding: 8px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* Ensure pose feedback is clearly visible over dark backgrounds */
+#poseFeedback.message {
+    display: block !important;
+    z-index: 1200;
+    color: #c0a062 !important;
+    background-color: rgba(32, 28, 20, 0.92) !important;
+    border: 1px solid rgba(192, 160, 98, 0.18) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+
+
+/* To-Do List Styling */
+#todoForm {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+#todoInput {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+#addTodoBtn {
+    padding: 10px 15px;
+    background-color: #5f9ea0;
+    /* Muted teal */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+
+#addTodoBtn:hover {
+    background-color: #4a7c7d;
+}
+
+#todoList {
+    list-style: none;
+    padding: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 5px 0;
+}
+
+#todoList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #444;
+    font-size: 0.95rem;
+}
+
+#todoList li:last-child {
+    border-bottom: none;
+}
+
+#todoList li span.task-text {
+    flex-grow: 1;
+    margin-right: 10px;
+    word-break: break-word;
+}
+
+#todoList li.completed span.task-text {
+    text-decoration: line-through;
+    color: #888;
+}
+
+#todoList li .todo-actions {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+#todoList li .todo-actions button {
+    margin-left: 6px;
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    line-height: 1.2;
+}
+
+#todoList li .todo-actions button.complete-btn {
+    background-color: #4682b4;
+    color: white;
+}
+
+#todoList li .todo-actions button.complete-btn:hover {
+    background-color: #3a6a94;
+}
+
+#todoList li .todo-actions button.delete-btn {
+    background-color: #993333;
+    color: white;
+}
+
+#todoList li .todo-actions button.delete-btn:hover {
+    background-color: #802020;
+}
+
+/* Workout Logs Display */
+#workoutLogsDisplay {
+    margin-top: 15px;
+}
+
+#logsList {
+    list-style: none;
+    padding: 0;
+}
+
+#logsList li {
+    background-color: #333;
+    padding: 10px 15px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    border-left: 3px solid #888;
+    font-size: 0.9rem;
+}
+
+#logsList li strong {
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+/* Calorie Cycle Display */
+#calorieCycleDisplay {
+    background-color: #2f343c;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #444;
+}
+
+#calorieCycleDisplay h4 {
+    color: #c0a062;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+#calorieCycleDisplay>p {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+#calorieCycleDisplay>p strong {
+    color: #c0a062;
+}
+
+#calorieCycleList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#calorieCycleList li.calorie-day {
+    background-color: #333;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border-left: 4px solid #555;
+}
+
+#calorieCycleList li.calorie-day:last-child {
+    margin-bottom: 0;
+}
+
+.calorie-day-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.calorie-day-header .day-name {
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.calorie-day-header .day-date {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.calorie-stats {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: #a0a0a0;
+    margin-bottom: 8px;
+}
+
+.calorie-stats .target {
+    color: #888;
+}
+
+.calorie-stats .burned {
+    color: #666;
+}
+
+.calorie-stats .burned.has-workout {
+    color: #5cb85c;
+    font-weight: 500;
+}
+
+.calorie-stats .workout-count {
+    color: #c0a062;
+    font-size: 0.8rem;
+}
+
+.calorie-bar {
+    height: 6px;
+    background-color: #444;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.calorie-bar-fill {
+    height: 100%;
+    background-color: #555;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.calorie-bar-fill.active {
+    background: linear-gradient(90deg, #5cb85c, #4cae4c);
+}
+
+
+/* Health Tips Card */
+#healthTipsCard ul {
+    list-style-type: disc;
+    padding-left: 25px;
+    margin-top: 8px;
+}
+
+#healthTipsCard li {
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: #a0a0a0;
+}
+
+#adminPage h4 {
+    margin-top: 20px;
+    color: #c0a062;
+    border-top: 1px solid #555;
+    padding-top: 15px;
+}
+
+#adminPage h4:first-of-type {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+/* Admin Stats Grid */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.admin-stat-card {
+    background: linear-gradient(135deg, #2f343c 0%, #3a3f48 100%);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 20px 15px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.admin-stat-card .stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #c0a062;
+    margin-bottom: 5px;
+}
+
+.admin-stat-card .stat-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Admin User Controls */
+.admin-user-controls {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.admin-search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 15px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+}
+
+.admin-search-input:focus {
+    outline: none;
+    border-color: #c0a062;
+}
+
+/* Admin Table Container */
+#adminUserTableContainer {
+    overflow-x: auto;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+/* Admin Table */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 700px;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 14px 12px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+    vertical-align: middle;
+}
+
+/* Column alignments */
+.admin-table th:first-child,
+.admin-table td:first-child {
+    text-align: center;
+    width: 60px;
+}
+
+.admin-table th:nth-child(5),
+.admin-table td:nth-child(5) {
+    text-align: center;
+    width: 90px;
+}
+
+.admin-table th:nth-child(6),
+.admin-table td:nth-child(6) {
+    text-align: center;
+    width: 80px;
+}
+
+.admin-table th:last-child,
+.admin-table td:last-child {
+    text-align: center;
+    width: 100px;
+}
+
+.admin-table th {
+    background-color: #2a2a2a;
+    color: #c0a062;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+}
+
+.admin-table td {
+    color: #d0d0d0;
+}
+
+.admin-table td:nth-child(2) {
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+.admin-table td:nth-child(3) {
+    color: #a0a0a0;
+    font-size: 0.85rem;
+}
+
+.admin-table td:nth-child(4) {
+    color: #c0a062;
+    font-size: 0.85rem;
+}
+
+.admin-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.admin-table tbody tr:hover {
+    background-color: #333;
+}
+
+.admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-table .admin-row {
+    background-color: rgba(192, 160, 98, 0.08);
+}
+
+.admin-table .admin-row:hover {
+    background-color: rgba(192, 160, 98, 0.15);
+}
+
+.you-badge {
+    color: #5cb85c;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: rgba(92, 184, 92, 0.15);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+.superadmin-badge {
+    color: #f0ad4e;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: rgba(240, 173, 78, 0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+.admin-table .superadmin-row {
+    background-color: rgba(240, 173, 78, 0.08);
+}
+
+.admin-table .superadmin-row:hover {
+    background-color: rgba(240, 173, 78, 0.15);
+}
+
+/* Toggle Switch */
+.admin-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.admin-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #444;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #888;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.admin-toggle input:checked+.toggle-slider {
+    background-color: #c0a062;
+}
+
+.admin-toggle input:checked+.toggle-slider:before {
+    transform: translateX(20px);
+    background-color: #fff;
+}
+
+.admin-toggle input:disabled+.toggle-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Admin Buttons */
+.btn-secondary {
+    padding: 10px 20px;
+    background-color: #444;
+    color: #e0e0e0;
+    border: 1px solid #555;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #555;
+}
+
+.btn-danger {
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #c9302c;
+}
+
+.btn-danger:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-small {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+}
+
+
+/* --- Footer --- */
+footer {
+    background-color: #1a1a1a;
+    color: #888;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    margin-top: auto;
+    font-size: 0.9rem;
+    border-top: 1px solid #333;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+    body {
+        background-attachment: scroll;
+        overflow-x: hidden;
+    }
+
+    header {
+        padding: 0.8rem 1rem;
+    }
+
+    header h1#headerTitle {
+        font-size: 1.5rem;
+    }
+
+    header nav {
+        right: 15px;
+    }
+
+    header nav button#logoutBtn {
+        padding: 0.5em 1em;
+        font-size: 0.85rem;
+    }
+
+    main {
+        padding: 15px;
+    }
+
+    .card {
+        width: 95%;
+        padding: 20px;
+    }
+
+    #dashboardSection {
+        max-width: 100%;
+    }
+
+    #dashboardOverviewPage .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .info-card h3 {
+        font-size: 1.1rem;
+    }
+
+    h2.dashboard-welcome {
+        font-size: 1.5rem;
+    }
+
+    .info-card-detail h3,
+    .dashboard-page.active-detail-page h3 {
+        font-size: 1.4rem;
+        text-align: center;
+    }
+
+    .card h2 {
+        font-size: 1.4rem;
+    }
+
+    #todoForm {
+        flex-direction: column;
+    }
+
+    #addTodoBtn {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    #weeklyDietPlanTabs {
+        justify-content: flex-start;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 15px;
+    }
+
+    .day-tab {
+        flex-shrink: 0;
+    }
+
+    .cuisine-options-container {
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    }
+
+    #profilePage .profile-header-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .webcam-container {
+        max-width: 100%;
+        aspect-ratio: unset;
+        height: 300px;
+    }
+
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 15px;
+    }
+
+    header h1#headerTitle {
+        font-size: 1.3rem;
+    }
+
+    input,
+    select,
+    button,
+    .auth-choice-buttons button.auth-choice-button {
+        font-size: 0.95rem;
+        padding: 10px 12px;
+    }
+
+    .info-card,
+    .info-card-detail,
+    .dashboard-page.active-detail-page {
+        padding: 15px;
+    }
+
+    #timerDisplay {
+        font-size: 1.7rem;
+    }
+
+    #todoList li {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px;
+    }
+
+    #todoList li span.task-text {
+        margin-bottom: 8px;
+    }
+
+    #todoList li .todo-actions {
+        margin-top: 8px;
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    #todoList li .todo-actions button {
+        padding: 6px 10px;
+    }
+
+    #addTodoBtn {
+        font-size: 0.95rem;
+    }
+
+    #weeklyDietPlanTabs button.day-tab {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+
+    .cuisine-options-container {
+        grid-template-columns: 1fr;
+    }
+
+    #editProfileForm button.action-button,
+    #editProfileForm button.action-button.secondary {
+        width: 100%;
+        margin-left: 0;
+        margin-bottom: 10px;
+    }
+
+    .webcam-container {
+        height: 240px;
+    }
+}
