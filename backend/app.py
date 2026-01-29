@@ -13,21 +13,20 @@ import random
 from datetime import date, datetime, timedelta
 import logging
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler
-from sqlalchemy import text
 
 # --- App Configuration ---
 app = Flask(__name__)
 
 # --- CORS Configuration ---
+allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
 CORS(app,
-     resources={r"/api/*": {"origins": ["http://localhost:8000", "http://127.0.0.1:8000"]}},
+     resources={r"/api/*": {"origins": allowed_origins}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
      expose_headers=["Content-Length", "X-CSRFToken"])
-app.logger.info("CORS initialized for API routes, allowing http://localhost:8000 and http://127.0.0.1:8000")
+app.logger.info(f"CORS initialized for origins: {allowed_origins}")
 
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'your_fallback_SPA_secret_key_v13_ADMIN_AUTH_FINAL') # CHANGE THIS IN PRODUCTION
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -35,8 +34,11 @@ instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instan
 try:
     os.makedirs(instance_path, exist_ok=True)
 except OSError: pass
-db_path = os.path.join(instance_path, 'app.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+db_url = os.environ.get('DATABASE_URL')
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or f'sqlite:///{db_path}'
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -166,68 +168,6 @@ def get_target_calories(tdee, goal):
     if goal_lower == 'weight_loss': return tdee - 500
     elif goal_lower == 'muscle_gain': return tdee + 300
     return tdee
-
-# --- Diet Recommendation Logic ---
-def _generate_single_day_diet(user_profile_data, available_recipes_df, used_recipes_for_week_set, num_options_per_meal=1):
-    target_calories_total = user_profile_data.get('target_calories', 2000)
-    calorie_dist = {'breakfast': 0.25, 'lunch': 0.40, 'dinner': 0.35}
-    daily_meals_options = {meal: [] for meal in calorie_dist}
-    recipes_used_this_day = set()
-    recipe_name_column = 'Recipe_name' # Ensure this column exists in your CSV
-
-    for meal_type, proportion in calorie_dist.items():
-        target_meal_calories = target_calories_total * proportion
-        tolerance_percentage = 0.35
-
-        # Filter candidates: not used this day AND not used recently in the week (more strictly)
-        candidates = available_recipes_df[
-            ~available_recipes_df[recipe_name_column].isin(recipes_used_this_day) &
-            ~available_recipes_df[recipe_name_column].isin(used_recipes_for_week_set)
-        ].copy()
-        if candidates.empty: # Fallback 1: Not used this day
-            candidates = available_recipes_df[~available_recipes_df[recipe_name_column].isin(recipes_used_this_day)].copy()
-        if candidates.empty: # Fallback 2: Any available (may repeat from week)
-            candidates = available_recipes_df.copy()
-
-        for _ in range(num_options_per_meal):
-            if candidates.empty: break
-
-            # Filter out already selected options for this meal type
-            current_selection_pool = candidates[~candidates[recipe_name_column].isin(
-                [opt['name'] for opt in daily_meals_options[meal_type]]
-            )].copy()
-            if current_selection_pool.empty: break
-
-            current_selection_pool['calorie_diff'] = abs(current_selection_pool['Calories'] - target_meal_calories)
-
-            # Prioritize dishes within tolerance
-            potential_dishes = current_selection_pool[current_selection_pool['calorie_diff'] <= (target_meal_calories * tolerance_percentage)]
-
-            chosen_dish_series = None
-            if not potential_dishes.empty:
-                chosen_dish_series = potential_dishes.sort_values(by='calorie_diff').sample(n=1, replace=False, random_state=random.randint(1,10000)).iloc[0]
-            elif not current_selection_pool.empty: # If no dish within tolerance, pick the closest one
-                chosen_dish_series = current_selection_pool.sort_values(by='calorie_diff').sample(n=1, replace=False, random_state=random.randint(1,10000)).iloc[0]
-
-            if chosen_dish_series is not None:
-                actual_recipe_name = chosen_dish_series[recipe_name_column]
-                recipes_used_this_day.add(actual_recipe_name)
-                daily_meals_options[meal_type].append({
-                    "name": str(actual_recipe_name),
-                    "calories": int(chosen_dish_series.get('Calories', 0)),
-                    "protein": int(chosen_dish_series.get('Protein', 0)),
-                    "carbs": int(chosen_dish_series.get('Carbs', 0)),
-                    "fat": int(chosen_dish_series.get('Fat', 0)),
-                    "cuisine": str(chosen_dish_series.get('Cuisine', 'N/A'))
-                })
-            else: break # No suitable dish found
-
-        if not daily_meals_options[meal_type]: # Fallback if no options found
-            daily_meals_options[meal_type] = [{"name": "N/A - More variety needed", "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "cuisine": "N/A"}]
-
-    day_total_calories = sum(meal_options[0]['calories'] for meal_options in daily_meals_options.values() if meal_options and meal_options[0]['calories'] > 0)
-    return {"meals": daily_meals_options, "total_calories_for_day": day_total_calories}, recipes_used_this_day
-
 
 
 # --- Workout Recommendation Logic ---
