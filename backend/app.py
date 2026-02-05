@@ -28,6 +28,7 @@ frontend_url = os.environ.get('FRONTEND_URL')
 cors_origins = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "https://fitguide-frontend-g06v.onrender.com",  # Explicit frontend URL
     r"https://.*\.onrender\.com"
 ]
 if frontend_url:
@@ -90,8 +91,8 @@ def log_incoming_request():
     app.logger.debug(f"--- Incoming Request ---")
     app.logger.debug(f"Path: {request.path}")
     app.logger.debug(f"Method: {request.method}")
-    app.logger.debug(f"Origin Header: {request.headers.get('Origin')}")
-    app.logger.debug(f"Cookies: {list(request.cookies.keys())}")
+    app.logger.debug(f"Origin: {request.headers.get('Origin')}")
+    app.logger.debug(f"Headers: {dict(request.headers)}")
     if request.method == 'OPTIONS':
         app.logger.debug('Identified as an OPTIONS preflight request.')
 
