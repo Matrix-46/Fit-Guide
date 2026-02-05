@@ -37,7 +37,7 @@ CORS(app,
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
      expose_headers=["Content-Length", "X-CSRFToken"])
-app.logger.info(f"CORS initialized for API routes, allowing origins: {allowed_origins}")
+app.logger.info(f"CORS initialized for API routes. Allowed origins: {allowed_origins}")
 
 # Secret Key Configuration (MUST be set via environment variable in production)
 secret_key = os.environ.get('FLASK_SECRET_KEY')
@@ -1227,58 +1227,54 @@ if __name__ == '__main__':
                 res = conn.execute(text("PRAGMA table_info('user')"))
                 rows = res.fetchall()
                 cols = [r[1] for r in rows]
-
-                if 'email' not in cols:
-                    app.logger.info("Migration: adding 'email' column to 'user' table.")
-                    try:
-                        conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR"))
-                        app.logger.info("Migration: 'email' column added.")
-                    except Exception as me:
-                        app.logger.error(f"Migration failed to add 'email' column: {me}")
-                else:
-                    app.logger.info("Migration: 'email' column already present.")
-        except Exception as e:
-            app.logger.warning(f"Could not run migration check for 'email' column: {e}")
-
+    # Create tables and run migrations
+    with app.app_context():
+        app.logger.info("Ensuring database tables exist...")
+        db.create_all()
+        
         # Ensure admin user with admin email exists
         admin_username = "Abhinandan"
-        admin_email = "abhinandan@admin.com"
-        admin_password = "123456"
-        admin = User.query.filter_by(email=admin_email).first()
-        if admin:
-            if not admin.is_admin_user:
-                admin.is_admin_user = True
-                db.session.commit()
-                app.logger.info(f"User with email '{admin_email}' found and ensured admin status.")
-        else:
-            # If no user with admin email, check if a user with the admin username exists
-            existing_by_username = User.query.filter_by(username=admin_username).first()
-            if existing_by_username:
-                # Promote existing user to admin and set email/password if missing
-                existing_by_username.email = admin_email
-                try:
-                    existing_by_username.set_password(admin_password)
-                except Exception:
-                    pass
-                existing_by_username.is_admin_user = True
-                db.session.commit()
-                app.logger.info(f"Existing user '{admin_username}' promoted to admin and email set to '{admin_email}'.")
-                admin = existing_by_username
+        admin_email = os.environ.get('ADMIN_EMAIL', 'abhinandan@admin.com')
+        admin_password = os.environ.get('ADMIN_PASSWORD', '123456')
+        
+        try:
+            admin = User.query.filter_by(email=admin_email).first()
+            if admin:
+                if not admin.is_admin_user:
+                    admin.is_admin_user = True
+                    db.session.commit()
+                    app.logger.info(f"User with email '{admin_email}' found and ensured admin status.")
             else:
-                # Create a fresh admin user
-                admin = User(
-                    username=admin_username, email=admin_email,
-                    gender="other", age=30, height_cm=160, weight_kg=60,
-                    diet_preference="any", activity_level="moderate", goals="maintenance",
-                    is_admin_user=True
-                )
-                admin.set_password(admin_password)
-                db.session.add(admin)
-                db.session.commit()
-                app.logger.info(f"Admin user '{admin_email}' created with default password.")
-
+                # If no user with admin email, check if a user with the admin username exists
+                existing_by_username = User.query.filter_by(username=admin_username).first()
+                if existing_by_username:
+                    # Promote existing user to admin and set email/password if missing
+                    existing_by_username.email = admin_email
+                    try:
+                        existing_by_username.set_password(admin_password)
+                    except Exception:
+                        pass
+                    existing_by_username.is_admin_user = True
+                    db.session.commit()
+                    app.logger.info(f"Existing user '{admin_username}' promoted to admin and email set to '{admin_email}'.")
+                    admin = existing_by_username
+                else:
+                    # Create a fresh admin user
+                    admin = User(
+                        username=admin_username, email=admin_email,
+                        gender="other", age=30, height_cm=160, weight_kg=60,
+                        diet_preference="any", activity_level="moderate", goals="maintenance",
+                        is_admin_user=True
+                    )
+                    admin.set_password(admin_password)
+                    db.session.add(admin)
+                    db.session.commit()
+                    app.logger.info(f"Admin user '{admin_email}' created with default password.")
+        except Exception as e:
+            app.logger.error(f"Error initializing admin user: {e}")
 
         app.logger.info("Database tables ensured.")
+        
         # --- Migration: ensure `pose_data` column exists on WorkoutLog table ---
         try:
             with db.engine.connect() as conn:
