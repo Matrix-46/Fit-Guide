@@ -31,13 +31,26 @@ if frontend_url:
 # Always allow localhost for development
 allowed_origins.extend(["http://localhost:8000", "http://127.0.0.1:8000"])
 
+# Helper to allow all onrender.com subdomains dynamically
+def is_allowed_origin(origin):
+    if not origin: return False
+    # Allow localhost, specific frontend_url, and any .onrender.com subdomain
+    if origin in allowed_origins: return True
+    if origin.endswith(".onrender.com"): return True
+    return False
+
 CORS(app,
-     resources={r"/api/*": {"origins": allowed_origins}},
+     resources={r"/api/*": {"origins": is_allowed_origin if frontend_url else allowed_origins}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
      expose_headers=["Content-Length", "X-CSRFToken"])
-app.logger.info(f"CORS initialized for API routes. Allowed origins: {allowed_origins}")
+
+@app.before_request
+def log_request_info():
+    origin = request.headers.get('Origin')
+    if origin:
+        app.logger.info(f"Request from Origin: {origin} - Allowed: {is_allowed_origin(origin)}")
 
 # Secret Key Configuration (MUST be set via environment variable in production)
 secret_key = os.environ.get('FLASK_SECRET_KEY')
