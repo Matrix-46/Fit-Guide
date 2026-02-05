@@ -25,27 +25,31 @@ app = Flask(__name__)
 
 # --- CORS Configuration ---
 frontend_url = os.environ.get('FRONTEND_URL')
-allowed_origins = [
+cors_origins = [
     "http://localhost:8000",
-    "http://127.0.0.1:8000"
+    "http://127.0.0.1:8000",
+    r"https://.*\.onrender\.com"
 ]
 if frontend_url:
-    allowed_origins.append(frontend_url)
-
-def is_allowed_origin(origin):
-    if not origin: return False
-    if origin in allowed_origins: return True
-    # Allow any .onrender.com subdomain
-    if re.match(r"https://.*\.onrender\.com", origin):
-        return True
-    return False
+    cors_origins.append(frontend_url)
 
 CORS(app,
-     resources={r"/api/.*": {"origins": is_allowed_origin}},
+     resources={r"/api/.*": {"origins": cors_origins}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
      expose_headers=["Content-Length", "X-CSRFToken"])
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    code = 500
+    if isinstance(e, Exception):
+        # You could import HTTPExceptions here for better granularity
+        pass
+    app.logger.error(f"Unhandled Exception: {e}", exc_info=True)
+    response = jsonify({"message": str(e) or "An internal error occurred."})
+    response.status_code = code
+    return response
 
 # Secret Key Configuration (MUST be set via environment variable in production)
 secret_key = os.environ.get('FLASK_SECRET_KEY')
