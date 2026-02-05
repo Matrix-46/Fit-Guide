@@ -20,6 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginMessage = document.getElementById('loginMessage');
     const registerMessage = document.getElementById('registerMessage');
 
+    console.log("Fit-Guide Frontend Initializing...");
+    console.log("allMainViews populated with:", [authChoiceView, loginView, registerView, dashboardSection].map(v => v ? v.id : 'null'));
+
+    window.onerror = function (message, source, lineno, colno, error) {
+        console.error("Global JS Error:", message, "at", source, ":", lineno);
+        showUserMessage(loginMessage || dashboardApiMessage, `System Error: ${message}`, true, false);
+    };
+
     const logoutBtn = document.getElementById('logoutBtn');
     const dashboardHeader = document.getElementById('dashboardHeader');
     const dashboardWelcomeMessage = document.getElementById('dashboardWelcomeMessage');
@@ -295,35 +303,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function router() {
         const hash = window.location.hash.substring(1);
-        if (currentUserData) {
-            showMainView('dashboardSection'); // This also handles admin card visibility
-            const targetPageKey = hash || defaultDashboardRoute;
-            const targetPageId = routes[targetPageKey];
 
-            // Special check for admin page access
-            if (targetPageId === 'adminPage' && (!currentUserData || !currentUserData.is_admin)) {
-                showUserMessage(dashboardApiMessage, "Access Denied: Admin privileges required.", true);
-                navigateTo(defaultDashboardRoute); // Redirect non-admins
+        // --- Authentication Guard ---
+        if (!currentUserData) {
+            // Force login or register if not authenticated and attempting to access dashboard
+            if (hash.includes('dashboard') || !hash) {
+                showMainView('loginView');
+                if (hash) window.location.hash = 'login';
                 return;
             }
+            // Allow login/register/auth-choice views
+            const targetAuthViewId = routes[hash] || 'loginView';
+            if (['loginView', 'registerView', 'authChoiceView'].includes(targetAuthViewId)) {
+                showMainView(targetAuthViewId);
+            } else {
+                showMainView('loginView');
+                window.location.hash = 'login';
+            }
+            return;
+        }
 
-            if (targetPageId === 'dashboardOverviewPage') showDashboardOverview();
-            else if (targetPageId && document.getElementById(targetPageId)) showDashboardPage(targetPageId);
-            else showDashboardOverview();
+        // --- Authenticated Routing ---
+        showMainView('dashboardSection');
+
+        const targetPageKey = hash || defaultDashboardRoute;
+        const targetPageId = routes[targetPageKey];
+
+        // Sanity check: if we got an auth view while logged in, go to dashboard
+        if (['loginView', 'registerView', 'authChoiceView'].includes(targetPageId)) {
+            navigateTo(defaultDashboardRoute);
+            return;
+        }
+
+        // Handle Admin Access
+        if (targetPageId === 'adminPage' && !currentUserData.is_admin) {
+            showUserMessage(dashboardApiMessage, "Access Denied: Admin privileges required.", true);
+            navigateTo(defaultDashboardRoute);
+            return;
+        }
+
+        // Render target page
+        if (targetPageId === 'dashboardOverviewPage' || !targetPageId) {
+            showDashboardOverview();
+        } else if (document.getElementById(targetPageId)) {
+            showDashboardPage(targetPageId);
         } else {
-            const targetAuthViewId = routes[hash] || defaultInitialView;
-            if (document.getElementById(targetAuthViewId)) showMainView(targetAuthViewId);
-            else { showMainView(defaultInitialView); if (window.location.hash && hash !== 'login') window.location.hash = 'login'; }
+            showDashboardOverview();
         }
     }
     function navigateTo(routeKey) { window.location.hash = routeKey; }
 
     async function apiCall(endpoint, method = 'GET', body = null) {
+        console.log(`API [${method}] ${endpoint} ...`);
         const options = { method, headers: {}, credentials: 'include' };
         if (method !== 'GET' && method !== 'HEAD') { options.headers['Content-Type'] = 'application/json'; }
         if (body && (method === 'POST' || method === 'PUT')) { options.body = JSON.stringify(body); }
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+            console.log(`API [${method}] ${endpoint} Status: ${response.status}`);
             let responseData = {}; const contentType = response.headers.get("content-type");
             if (contentType && contentType.includes("application/json")) { responseData = await response.json(); }
             else if (response.ok && response.status === 204) { return { message: "Operation successful (No Content)" }; }
@@ -367,22 +404,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = loginForm.loginEmail.value; const password = loginForm.loginPassword.value;
             if (!email || !password) { showUserMessage(loginMessage, 'Email and password are required.', true); return; }
             try {
+                if (loginForm.querySelector('button[type="submit"]')) loginForm.querySelector('button[type="submit"]').disabled = true;
                 const data = await apiCall('/login', 'POST', { email, password });
-                currentUserData = data.user; // data.user is { id, username, is_admin }
+                currentUserData = data.user;
                 localStorage.setItem('Fit-GuideUser', JSON.stringify(currentUserData));
 
-                if (currentUserData && currentUserData.is_admin) {
-                    console.log("Admin user logged in:", currentUserData.username);
-                    showUserMessage(dashboardApiMessage || loginMessage, "Admin login successful. Welcome, Abhinandan!", false, true);
-                    if (adminPanelCard) adminPanelCard.style.display = 'block'; // Show admin card on overview
-                } else if (currentUserData) {
-                    console.log("Regular user logged in:", currentUserData.username);
-                    if (adminPanelCard) adminPanelCard.style.display = 'none'; // Hide admin card
-                }
+                // We MUST set the view before fetching data so the skeleton is visible
+                router();
 
-                await fetchDashboardData(); // Fetches full profile including is_admin from backend
-                navigateTo(defaultDashboardRoute);
-            } catch (error) { /* error displayed by apiCall */ }
+                // Fetch data in background. If it fails (401), fetchDashboardData handles the redirect.
+                fetchDashboardData();
+
+            } catch (error) {
+                // Error already shown by apiCall
+                if (loginForm.querySelector('button[type="submit"]')) loginForm.querySelector('button[type="submit"]').disabled = false;
+            }
         });
     }
     if (registerForm) {
@@ -1204,59 +1240,33 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initializeApp() {
         if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
         const storedUserString = localStorage.getItem('Fit-GuideUser');
-        let initialRoute = defaultInitialView;
+
         if (storedUserString) {
             try {
-                const storedUserData = JSON.parse(storedUserString);
-                // Set a temporary currentUserData to allow /user_profile call
-                currentUserData = storedUserData;
+                currentUserData = JSON.parse(storedUserString);
+                // Set UI state based on session
+                router();
 
+                // Validate session and get fresh data
                 const profileData = await apiCall('/user_profile');
-
-                // Combine stored admin status with fresh profile data from backend
-                // The backend's /user_profile now returns is_admin flag.
                 currentUserData = {
-                    ...profileData, // This contains the full fresh profile from backend
-                    id: storedUserData.id, // Ensure ID from storage is kept if not in profileData
-                    username: profileData.username || storedUserData.username, // Prefer backend username
-                    is_admin: profileData.is_admin !== undefined ? profileData.is_admin : (storedUserData.is_admin || false)
+                    ...profileData,
+                    id: currentUserData.id,
+                    is_admin: profileData.is_admin !== undefined ? profileData.is_admin : (currentUserData.is_admin || false)
                 };
                 localStorage.setItem('Fit-GuideUser', JSON.stringify(currentUserData));
 
-                if (currentUserData.is_admin) {
-                    console.log("Admin session restored:", currentUserData.username);
-                    if (adminPanelCard) adminPanelCard.style.display = 'block';
-                } else {
-                    if (adminPanelCard) adminPanelCard.style.display = 'none';
-                }
-                initializeDashboardNavItems();
-
-                // Show UI immediately, then fetch data in background
-                initialRoute = window.location.hash.substring(1) || defaultDashboardRoute;
-                router();
+                // Refresh data
                 fetchDashboardData();
 
             } catch (error) {
-                console.warn("Session validation/initial data fetch error:", error.message);
-                currentUserData = null; localStorage.removeItem('Fit-GuideUser');
-                currentRawProfileData = null;
-                if (adminPanelCard) adminPanelCard.style.display = 'none';
-                initialRoute = defaultInitialView;
-                if (!window.location.hash.includes('login') && !window.location.hash.includes('register')) {
-                    navigateTo('login');
-                }
+                console.warn("Session expired or invalid:", error.message);
+                currentUserData = null;
+                localStorage.removeItem('Fit-GuideUser');
+                router(); // Will redirect to login
             }
         } else {
-            if (adminPanelCard) adminPanelCard.style.display = 'none';
-        }
-
-        // Final navigation decision for non-stored users
-        if (!storedUserString) {
-            if (!window.location.hash || window.location.hash === "#" || window.location.hash.includes('dashboard')) {
-                navigateTo(initialRoute);
-            } else {
-                router();
-            }
+            router(); // Show initial view (login)
         }
     }
     window.addEventListener('hashchange', router);

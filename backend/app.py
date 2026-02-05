@@ -7,6 +7,7 @@ load_dotenv()  # Load .env file if it exists
 from flask import Flask, request, jsonify, session
 import json
 import os
+import re
 import random
 import logging
 from datetime import date, datetime, timedelta
@@ -24,18 +25,23 @@ app = Flask(__name__)
 
 # --- CORS Configuration ---
 frontend_url = os.environ.get('FRONTEND_URL')
-
-# Specific origins are REQUIRED when supports_credentials=True (cannot use '*')
-cors_origins = [
+allowed_origins = [
     "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    r"https://.*\.onrender\.com"
+    "http://127.0.0.1:8000"
 ]
 if frontend_url:
-    cors_origins.append(frontend_url)
+    allowed_origins.append(frontend_url)
+
+def is_allowed_origin(origin):
+    if not origin: return False
+    if origin in allowed_origins: return True
+    # Allow any .onrender.com subdomain
+    if re.match(r"https://.*\.onrender\.com", origin):
+        return True
+    return False
 
 CORS(app,
-     resources={r"/api/*": {"origins": cors_origins}},
+     resources={r"/api/.*": {"origins": is_allowed_origin}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
@@ -81,6 +87,7 @@ def log_incoming_request():
     app.logger.debug(f"Path: {request.path}")
     app.logger.debug(f"Method: {request.method}")
     app.logger.debug(f"Origin Header: {request.headers.get('Origin')}")
+    app.logger.debug(f"Cookies: {list(request.cookies.keys())}")
     if request.method == 'OPTIONS':
         app.logger.debug('Identified as an OPTIONS preflight request.')
 

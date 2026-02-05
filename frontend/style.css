@@ -89,7 +89,7 @@ header nav button#logoutBtn:hover {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
-/* --- Mbackground-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('assets/background.png');n Content --- */
+/* --- Main Content --- */
 main {
     flex-grow: 1;
     padding: 25px;
