@@ -6,16 +6,16 @@ load_dotenv()  # Load .env file if it exists
 
 from flask import Flask, request, jsonify, session
 import json
+import os
+import random
+import logging
+from datetime import date, datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (LoginManager, UserMixin, login_user, logout_user, login_required, current_user)
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
-import os
-import random
-from datetime import date, datetime, timedelta
-import logging
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 
@@ -25,8 +25,12 @@ app = Flask(__name__)
 # --- CORS Configuration ---
 frontend_url = os.environ.get('FRONTEND_URL')
 
-# Origins allowed: localhost for dev, specific frontend_url, and ALL .onrender.com subdomains via regex
-cors_origins = ["http://localhost:8000", "http://127.0.0.1:8000", r"https://.*\.onrender\.com"]
+# Specific origins are REQUIRED when supports_credentials=True (cannot use '*')
+cors_origins = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    r"https://.*\.onrender\.com"
+]
 if frontend_url:
     cors_origins.append(frontend_url)
 
@@ -36,8 +40,6 @@ CORS(app,
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
      expose_headers=["Content-Length", "X-CSRFToken"])
-
-# consolidated request info below
 
 # Secret Key Configuration (MUST be set via environment variable in production)
 secret_key = os.environ.get('FLASK_SECRET_KEY')
@@ -63,7 +65,6 @@ if db_url and db_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url or f'sqlite:///{db_path}'
 
-
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
@@ -75,12 +76,11 @@ app.logger.setLevel(logging.DEBUG)
 
 # --- Middleware for logging requests ---
 @app.before_request
-def log_request_info():
+def log_incoming_request():
     app.logger.debug(f"--- Incoming Request ---")
     app.logger.debug(f"Path: {request.path}")
     app.logger.debug(f"Method: {request.method}")
     app.logger.debug(f"Origin Header: {request.headers.get('Origin')}")
-    # app.logger.debug(f"Cookies: {request.cookies}") # Be careful logging cookies in production
     if request.method == 'OPTIONS':
         app.logger.debug('Identified as an OPTIONS preflight request.')
 
