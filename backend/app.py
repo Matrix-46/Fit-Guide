@@ -25,24 +25,19 @@ app = Flask(__name__)
 
 # --- CORS Configuration ---
 frontend_url = os.environ.get('FRONTEND_URL')
-allowed_origins = [
+# We use a list with regular strings and a compiled regex for subdomains
+# This is much more stable than passing a function to CORS resources
+cors_origins = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://fitguide-frontend-g06v.onrender.com"
+    "https://fitguide-frontend-g06v.onrender.com",
+    re.compile(r"https://.*\.onrender\.com")
 ]
 if frontend_url:
-    allowed_origins.append(frontend_url)
-
-def is_allowed_origin(origin):
-    if not origin: return True # Allow non-CORS requests 
-    if origin in allowed_origins: return True
-    # Robust subdomain check for Render
-    if re.match(r"https://.*\.onrender\.com", origin):
-        return True
-    return False
+    cors_origins.append(frontend_url)
 
 CORS(app,
-     resources={r"/api/.*": {"origins": is_allowed_origin}},
+     resources={r"/api/.*": {"origins": cors_origins}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
