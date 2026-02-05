@@ -275,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (dashboardOverviewPage) {
             dashboardOverviewPage.style.display = 'block';
+            setTimeout(() => dashboardOverviewPage.classList.add('active-detail-page'), 10);
             dashboardOverviewPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         // Ensure admin card is visible on overview if user is admin
