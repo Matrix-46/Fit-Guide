@@ -1,5 +1,9 @@
 # backend/app.py
 
+# Load environment variables from .env file (for local development and production)
+from dotenv import load_dotenv
+load_dotenv()  # Load .env file if it exists
+
 from flask import Flask, request, jsonify, session
 import json
 from flask_sqlalchemy import SQLAlchemy
@@ -19,16 +23,29 @@ from sklearn.preprocessing import StandardScaler
 app = Flask(__name__)
 
 # --- CORS Configuration ---
-allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
+# Allow frontend URLs from environment variable (for production) or localhost (for development)
+allowed_origins = []
+frontend_url = os.environ.get('FRONTEND_URL')
+if frontend_url:
+    allowed_origins.append(frontend_url)
+# Always allow localhost for development
+allowed_origins.extend(["http://localhost:8000", "http://127.0.0.1:8000"])
+
 CORS(app,
      resources={r"/api/*": {"origins": allowed_origins}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
      expose_headers=["Content-Length", "X-CSRFToken"])
-app.logger.info(f"CORS initialized for origins: {allowed_origins}")
+app.logger.info(f"CORS initialized for API routes, allowing origins: {allowed_origins}")
 
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'your_fallback_SPA_secret_key_v13_ADMIN_AUTH_FINAL') # CHANGE THIS IN PRODUCTION
+# Secret Key Configuration (MUST be set via environment variable in production)
+secret_key = os.environ.get('FLASK_SECRET_KEY')
+if not secret_key:
+    import secrets
+    secret_key = secrets.token_hex(32)
+    app.logger.warning("⚠️ FLASK_SECRET_KEY not set! Using randomly generated key. Sessions will not persist across restarts!")
+app.config['SECRET_KEY'] = secret_key
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
 try:
@@ -406,31 +423,45 @@ def login():
 
     email = email.strip().lower()
 
-    # Hardcoded Admin Check using admin email
-    if email == 'abhinandan@admin.com' and password == '123456':
+    # Admin Check using environment variables (for security)
+    admin_email = os.environ.get('ADMIN_EMAIL')
+    admin_password = os.environ.get('ADMIN_PASSWORD')
+    
+    # Only process admin login if admin credentials are configured
+    if admin_email and admin_password and email == admin_email:
+        # Authenticate admin
         admin_user = User.query.filter_by(email=email).first()
+        
+        # Create admin user if doesn't exist
         if not admin_user:
-            admin_user = User(username="Abhinandan", email=email, is_admin_user=True)
-            admin_user.set_password("123456")
-            admin_user.gender = "other"
-            admin_user.age = 30
-            admin_user.height_cm = 160
-            admin_user.weight_kg = 60
-            admin_user.diet_preference = "any"
-            admin_user.activity_level = "moderate"
-            admin_user.goals = "maintenance"
+            admin_user = User(
+                username=os.environ.get('ADMIN_USERNAME', 'Admin'),
+                email=admin_email,
+                is_admin_user=True,
+                gender="other",
+                age=30,
+                height_cm=160,
+                weight_kg=60,
+                diet_preference="any",
+                activity_level="moderate",
+                goals="maintenance"
+            )
+            admin_user.set_password(admin_password)
             try:
                 db.session.add(admin_user)
                 db.session.commit()
-                app.logger.info("Admin user 'Abhinandan' created with admin email.")
+                app.logger.info(f"Admin user '{admin_user.username}' created successfully.")
             except Exception as e:
                 db.session.rollback()
                 app.logger.error(f"Could not create admin user: {e}")
                 return jsonify({"message": "Admin setup error."}), 500
-        elif not admin_user.check_password("123456"):
+        
+        # Verify password
+        if not admin_user.check_password(password):
             app.logger.warning(f"Failed admin login attempt for email: {email} (password mismatch)")
-            return jsonify({"message": "Invalid admin credentials"}), 401
+            return jsonify({"message": "Invalid email or password"}), 401
 
+        # Ensure admin flag is set
         if not admin_user.is_admin_user:
             admin_user.is_admin_user = True
             db.session.commit()
