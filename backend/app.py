@@ -23,34 +23,21 @@ from sklearn.preprocessing import StandardScaler
 app = Flask(__name__)
 
 # --- CORS Configuration ---
-# Allow frontend URLs from environment variable (for production) or localhost (for development)
-allowed_origins = []
 frontend_url = os.environ.get('FRONTEND_URL')
-if frontend_url:
-    allowed_origins.append(frontend_url)
-# Always allow localhost for development
-allowed_origins.extend(["http://localhost:8000", "http://127.0.0.1:8000"])
 
-# Helper to allow all onrender.com subdomains dynamically
-def is_allowed_origin(origin):
-    if not origin: return False
-    # Allow localhost, specific frontend_url, and any .onrender.com subdomain
-    if origin in allowed_origins: return True
-    if origin.endswith(".onrender.com"): return True
-    return False
+# Origins allowed: localhost for dev, specific frontend_url, and ALL .onrender.com subdomains via regex
+cors_origins = ["http://localhost:8000", "http://127.0.0.1:8000", r"https://.*\.onrender\.com"]
+if frontend_url:
+    cors_origins.append(frontend_url)
 
 CORS(app,
-     resources={r"/api/*": {"origins": is_allowed_origin if frontend_url else allowed_origins}},
+     resources={r"/api/*": {"origins": cors_origins}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
      expose_headers=["Content-Length", "X-CSRFToken"])
 
-@app.before_request
-def log_request_info():
-    origin = request.headers.get('Origin')
-    if origin:
-        app.logger.info(f"Request from Origin: {origin} - Allowed: {is_allowed_origin(origin)}")
+# consolidated request info below
 
 # Secret Key Configuration (MUST be set via environment variable in production)
 secret_key = os.environ.get('FLASK_SECRET_KEY')
