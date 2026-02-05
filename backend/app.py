@@ -1215,49 +1215,43 @@ def bad_request_api_error(error):
     app.logger.warning(f"Bad request: {request.path} - Message: {message} - Error: {error}")
     return jsonify({"message": message}), 400
 
-# --- Main Execution ---
-if __name__ == '__main__':
-    with app.app_context():
-        app.logger.info(f"Checking database at: {db_path}")
-        db.create_all() # Creates tables if they don't exist
 
-        # --- Migration: ensure `email` column exists on existing DB ---
-        try:
-            with db.engine.connect() as conn:
-                res = conn.execute(text("PRAGMA table_info('user')"))
-                rows = res.fetchall()
-                cols = [r[1] for r in rows]
-    # Create tables and run migrations
-    with app.app_context():
-        app.logger.info("Ensuring database tables exist...")
-        db.create_all()
-        
-        # Ensure admin user with admin email exists
-        admin_username = "Abhinandan"
-        admin_email = os.environ.get('ADMIN_EMAIL', 'abhinandan@admin.com')
-        admin_password = os.environ.get('ADMIN_PASSWORD', '123456')
-        
-        try:
-            admin = User.query.filter_by(email=admin_email).first()
-            if admin:
-                if not admin.is_admin_user:
-                    admin.is_admin_user = True
-                    db.session.commit()
-                    app.logger.info(f"User with email '{admin_email}' found and ensured admin status.")
-            else:
-                # If no user with admin email, check if a user with the admin username exists
-                existing_by_username = User.query.filter_by(username=admin_username).first()
-                if existing_by_username:
-                    # Promote existing user to admin and set email/password if missing
-                    existing_by_username.email = admin_email
-                    try:
-                        existing_by_username.set_password(admin_password)
-                    except Exception:
-                        pass
-                    existing_by_username.is_admin_user = True
-                    db.session.commit()
-                    app.logger.info(f"Existing user '{admin_username}' promoted to admin and email set to '{admin_email}'.")
-                    admin = existing_by_username
+# --- Initialize Database and Admin ---
+def init_db():
+    try:
+        with app.app_context():
+            app.logger.info("Ensuring database tables exist...")
+            db.create_all()
+            
+            # --- Migration: ensure `pose_data` column exists on WorkoutLog table ---
+            try:
+                from sqlalchemy import text
+                with db.engine.connect() as conn:
+                    res = conn.execute(text("PRAGMA table_info('workout_log')"))
+                    rows = res.fetchall()
+                    cols = [r[1] for r in rows]
+                    if 'pose_data' not in cols:
+                        app.logger.info("Migration: adding 'pose_data' column to 'workout_log' table.")
+                        try:
+                            conn.execute(text("ALTER TABLE workout_log ADD COLUMN pose_data TEXT"))
+                            app.logger.info("Migration: 'pose_data' column added to workout_log.")
+                        except Exception as me:
+                            app.logger.error(f"Migration failed to add 'pose_data' column: {me}")
+            except Exception as e:
+                app.logger.warning(f"Could not run migration check for 'pose_data' column: {e}")
+
+            # Ensure admin user with admin email exists
+            admin_username = "Abhinandan"
+            admin_email = os.environ.get('ADMIN_EMAIL', 'abhinandan@admin.com')
+            admin_password = os.environ.get('ADMIN_PASSWORD', '123456')
+            
+            try:
+                admin = User.query.filter_by(email=admin_email).first()
+                if admin:
+                    if not admin.is_admin_user:
+                        admin.is_admin_user = True
+                        db.session.commit()
+                        app.logger.info(f"User with email '{admin_email}' found and ensured admin status.")
                 else:
                     # Create a fresh admin user
                     admin = User(
@@ -1270,27 +1264,17 @@ if __name__ == '__main__':
                     db.session.add(admin)
                     db.session.commit()
                     app.logger.info(f"Admin user '{admin_email}' created with default password.")
-        except Exception as e:
-            app.logger.error(f"Error initializing admin user: {e}")
+            except Exception as e:
+                app.logger.error(f"Error initializing admin user: {e}")
 
-        app.logger.info("Database tables ensured.")
-        
-        # --- Migration: ensure `pose_data` column exists on WorkoutLog table ---
-        try:
-            with db.engine.connect() as conn:
-                res = conn.execute(text("PRAGMA table_info('workout_log')"))
-                rows = res.fetchall()
-                cols = [r[1] for r in rows]
-                if 'pose_data' not in cols:
-                    app.logger.info("Migration: adding 'pose_data' column to 'workout_log' table.")
-                    try:
-                        conn.execute(text("ALTER TABLE workout_log ADD COLUMN pose_data TEXT"))
-                        app.logger.info("Migration: 'pose_data' column added to workout_log.")
-                    except Exception as me:
-                        app.logger.error(f"Migration failed to add 'pose_data' column: {me}")
-                else:
-                    app.logger.info("Migration: 'pose_data' column already present in workout_log.")
-        except Exception as e:
-            app.logger.warning(f"Could not run migration check for 'pose_data' column: {e}")
-    app.logger.info("Starting Fit-Guide API Backend Server...")
+            app.logger.info("Database initialization complete.")
+    except Exception as e:
+        app.logger.error(f"Failed to initialize database: {e}")
+
+# Run initialization on startup/import
+init_db()
+
+# --- Main Execution ---
+if __name__ == '__main__':
+    app.logger.info("Starting Fit-Guide API Backend Server in debug mode...")
     app.run(debug=True, host='0.0.0.0', port=5000)
