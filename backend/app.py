@@ -25,13 +25,11 @@ app = Flask(__name__)
 
 # --- CORS Configuration ---
 frontend_url = os.environ.get('FRONTEND_URL')
-# We use a list with regular strings and a compiled regex for subdomains
-# This is much more stable than passing a function to CORS resources
+# Use simple strings for maximum compatibility with flask-cors 3.0.x
 cors_origins = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://fitguide-frontend-g06v.onrender.com",
-    re.compile(r"https://.*\.onrender\.com")
+    "https://fitguide-frontend-g06v.onrender.com"
 ]
 if frontend_url:
     cors_origins.append(frontend_url)
@@ -43,12 +41,15 @@ CORS(app,
      supports_credentials=True,
      expose_headers=["Content-Length", "X-CSRFToken"])
 
+@app.before_request
+def log_incoming_request():
+    app.logger.debug(f"--- Incoming Request: {request.method} {request.path} (Origin: {request.headers.get('Origin')}) ---")
+
 @app.errorhandler(Exception)
 def handle_error(e):
-    code = 500
-    app.logger.error(f"Unhandled Exception: {e}", exc_info=True)
+    app.logger.error(f"Global Error Handler caught: {e}", exc_info=True)
     response = jsonify({"message": str(e) or "An internal error occurred."})
-    response.status_code = code
+    response.status_code = 500
     return response
 
 # Secret Key Configuration
@@ -80,27 +81,18 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.init_app(app)
-login_manager.session_protection = "strong" # For session security
-
-logging.basicConfig(level=logging.DEBUG)
-app.logger.setLevel(logging.DEBUG)
-
-# --- Middleware for logging requests ---
-@app.before_request
-def log_incoming_request():
-    app.logger.debug(f"--- Incoming Request ---")
-    app.logger.debug(f"Path: {request.path}")
-    app.logger.debug(f"Method: {request.method}")
-    app.logger.debug(f"Origin: {request.headers.get('Origin')}")
-    app.logger.debug(f"Headers: {dict(request.headers)}")
-    if request.method == 'OPTIONS':
-        app.logger.debug('Identified as an OPTIONS preflight request.')
+login_manager.session_protection = None # Loosened for Render load balancer compatibility
 
 @app.after_request
-def log_response_info(response):
-    app.logger.debug(f"--- Outgoing Response for {request.path} (Status: {response.status_code}) ---")
-    app.logger.debug(f"Access-Control-Allow-Origin: {response.headers.get('Access-Control-Allow-Origin')}")
-    app.logger.debug(f"Access-Control-Allow-Credentials: {response.headers.get('Access-Control-Allow-Credentials')}")
+def log_response_and_set_cors(response):
+    origin = request.headers.get('Origin')
+    # Use dynamic regex matching for .onrender.com subdomains
+    if origin and ('.onrender.com' in origin or 'localhost' in origin or '127.0.0.1' in origin):
+        if not response.headers.get('Access-Control-Allow-Origin'):
+            response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    
+    app.logger.debug(f"--- Outgoing Response: {response.status_code} ---")
     return response
 
 # --- Dataset Loading ---
