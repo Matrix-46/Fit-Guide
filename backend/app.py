@@ -51,11 +51,15 @@ instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instan
 try:
     os.makedirs(instance_path, exist_ok=True)
 except OSError: pass
+
+# Database configuration
+db_path = os.path.join(instance_path, 'fit_guide.db')
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url or f'sqlite:///{db_path}'
+
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
