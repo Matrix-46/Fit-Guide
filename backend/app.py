@@ -46,6 +46,9 @@ if not secret_key:
     secret_key = secrets.token_hex(32)
     app.logger.warning("⚠️ FLASK_SECRET_KEY not set! Using randomly generated key. Sessions will not persist across restarts!")
 app.config['SECRET_KEY'] = secret_key
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
 try:
