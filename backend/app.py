@@ -25,17 +25,24 @@ app = Flask(__name__)
 
 # --- CORS Configuration ---
 frontend_url = os.environ.get('FRONTEND_URL')
-cors_origins = [
+allowed_origins = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://fitguide-frontend-g06v.onrender.com",  # Explicit frontend URL
-    r"https://.*\.onrender\.com"
+    "https://fitguide-frontend-g06v.onrender.com"
 ]
 if frontend_url:
-    cors_origins.append(frontend_url)
+    allowed_origins.append(frontend_url)
+
+def is_allowed_origin(origin):
+    if not origin: return True # Allow non-CORS requests 
+    if origin in allowed_origins: return True
+    # Robust subdomain check for Render
+    if re.match(r"https://.*\.onrender\.com", origin):
+        return True
+    return False
 
 CORS(app,
-     resources={r"/api/.*": {"origins": cors_origins}},
+     resources={r"/api/.*": {"origins": is_allowed_origin}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
@@ -44,20 +51,18 @@ CORS(app,
 @app.errorhandler(Exception)
 def handle_error(e):
     code = 500
-    if isinstance(e, Exception):
-        # You could import HTTPExceptions here for better granularity
-        pass
     app.logger.error(f"Unhandled Exception: {e}", exc_info=True)
     response = jsonify({"message": str(e) or "An internal error occurred."})
     response.status_code = code
     return response
 
-# Secret Key Configuration (MUST be set via environment variable in production)
+# Secret Key Configuration
 secret_key = os.environ.get('FLASK_SECRET_KEY')
 if not secret_key:
-    import secrets
-    secret_key = secrets.token_hex(32)
-    app.logger.warning("⚠️ FLASK_SECRET_KEY not set! Using randomly generated key. Sessions will not persist across restarts!")
+    # Use a stable but semi-secure fallback based on the app path to prevent session loss on every restart
+    import hashlib
+    secret_key = hashlib.sha256(os.path.abspath(__file__).encode()).hexdigest()
+    app.logger.warning("⚠️ FLASK_SECRET_KEY not set! Using stable fallback key. Please set it in Render for security!")
 app.config['SECRET_KEY'] = secret_key
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True

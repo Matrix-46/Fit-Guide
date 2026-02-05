@@ -354,12 +354,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function navigateTo(routeKey) { window.location.hash = routeKey; }
 
     async function apiCall(endpoint, method = 'GET', body = null) {
-        console.log(`API [${method}] ${endpoint} ...`);
+        const fullUrl = `${API_BASE_URL}${endpoint}`;
+        console.log(`API [${method}] ${fullUrl} ...`);
         const options = { method, headers: {}, credentials: 'include' };
         if (method !== 'GET' && method !== 'HEAD') { options.headers['Content-Type'] = 'application/json'; }
         if (body && (method === 'POST' || method === 'PUT')) { options.body = JSON.stringify(body); }
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+            const response = await fetch(fullUrl, options);
             console.log(`API [${method}] ${endpoint} Status: ${response.status}`);
             let responseData = {}; const contentType = response.headers.get("content-type");
             if (contentType && contentType.includes("application/json")) { responseData = await response.json(); }
