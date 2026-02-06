@@ -125,6 +125,11 @@ def finalize_response(response):
                 if 'Secure' not in new_cookie:
                     new_cookie += '; Secure'
                 
+                # Add Partitioned for modern browser cross-site support (CHIPS)
+                if 'Partitioned' not in new_cookie:
+                    new_cookie += '; Partitioned'
+                
+                app.logger.debug(f"Finalized Set-Cookie: {new_cookie}")
                 response.headers.add('Set-Cookie', new_cookie)
 
     if request.method == 'OPTIONS':
