@@ -24,12 +24,16 @@ from sklearn.preprocessing import StandardScaler
 # --- App Configuration ---
 app = Flask(__name__)
 
-# Trust Render Proxy headers (X-Forwarded-Proto, X-Forwarded-For)
+# IMMEDIATELY Trust Render Proxy headers (X-Forwarded-Proto, X-Forwarded-For)
+# Render uses 1 proxy level.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_for=1, x_host=1, x_port=1)
+
+# Configure Log Level IMMEDIATELY
+logging.basicConfig(level=logging.DEBUG)
+app.logger.setLevel(logging.DEBUG)
 
 # --- CORS Configuration ---
 frontend_url = os.environ.get('FRONTEND_URL')
-# Use simple strings for maximum compatibility with flask-cors 3.0.x
 cors_origins = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
@@ -64,12 +68,14 @@ if not secret_key:
     secret_key = hashlib.sha256(os.path.abspath(__file__).encode()).hexdigest()
     app.logger.warning("⚠️ FLASK_SECRET_KEY not set! Using stable fallback key. Please set it in Render for security!")
 app.config['SECRET_KEY'] = secret_key
+app.config['PREFERRED_URL_SCHEME'] = 'https'
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['REMEMBER_COOKIE_SAMESITE'] = 'None'
 app.config['REMEMBER_COOKIE_SECURE'] = True
 app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_NAME'] = 'fitguide_session'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
 try:
@@ -81,46 +87,50 @@ db_path = os.path.join(instance_path, 'fit_guide.db')
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url or f'sqlite:///{db_path}'
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.init_app(app)
-app.config['SESSION_COOKIE_NAME'] = 'fitguide_session'
+login_manager.session_protection = None # Loosened for Render load balancer compatibility
+
+@app.before_request
+def debug_request_info():
+    app.logger.debug(f"--- Request: {request.method} {request.path} ---")
+    app.logger.debug(f"Secure: {request.is_secure}, Origin: {request.headers.get('Origin')}")
+    app.logger.debug(f"Cookies: {list(request.cookies.keys())}")
 
 @app.after_request
-def set_cors_headers_and_fix_cookies(response):
+def finalize_response(response):
     origin = request.headers.get('Origin')
+    # Use dynamic regex matching for .onrender.com subdomains
     if origin and ('.onrender.com' in origin or 'localhost' in origin or '127.0.0.1' in origin):
-        # Force these headers for trusted origins
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
         
-        # This is the "nuclear option" for cross-site cookie rejection
+        # Aggressively ensure cookies are cross-site compatible
         cookies = response.headers.getlist('Set-Cookie')
         if cookies:
             response.headers.remove('Set-Cookie')
             for cookie in cookies:
-                # Add SameSite=None if missing or different
-                if 'SameSite=' not in cookie:
-                    cookie += '; SameSite=None'
+                new_cookie = cookie
+                if 'SameSite=' not in new_cookie:
+                    new_cookie += '; SameSite=None'
                 else:
-                    cookie = re.sub(r'SameSite=\w+', 'SameSite=None', cookie)
+                    new_cookie = re.sub(r'SameSite=\w+', 'SameSite=None', new_cookie)
                 
-                # Add Secure if missing
-                if 'Secure' not in cookie:
-                    cookie += '; Secure'
+                if 'Secure' not in new_cookie:
+                    new_cookie += '; Secure'
                 
-                response.headers.add('Set-Cookie', cookie)
+                response.headers.add('Set-Cookie', new_cookie)
 
     if request.method == 'OPTIONS':
         response.status_code = 204
         
-    app.logger.debug(f"--- Response: {request.method} {request.path} -> {response.status_code} ---")
+    app.logger.debug(f"--- Response: {response.status_code} ---")
     return response
 
 # --- Dataset Loading ---
