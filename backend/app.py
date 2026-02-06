@@ -84,15 +84,19 @@ login_manager.init_app(app)
 login_manager.session_protection = None # Loosened for Render load balancer compatibility
 
 @app.after_request
-def log_response_and_set_cors(response):
+def set_cors_headers(response):
     origin = request.headers.get('Origin')
-    # Use dynamic regex matching for .onrender.com subdomains
     if origin and ('.onrender.com' in origin or 'localhost' in origin or '127.0.0.1' in origin):
-        if not response.headers.get('Access-Control-Allow-Origin'):
-            response.headers['Access-Control-Allow-Origin'] = origin
+        # Force these headers for trusted origins, overriding any flask-cors defaults
+        response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
-    
-    app.logger.debug(f"--- Outgoing Response: {response.status_code} ---")
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+        
+    if request.method == 'OPTIONS':
+        response.status_code = 204 # Standard for successful preflight
+        
+    app.logger.debug(f"--- Response: {request.method} {request.path} -> {response.status_code} ---")
     return response
 
 # --- Dataset Loading ---
