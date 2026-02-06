@@ -15,6 +15,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import (LoginManager, UserMixin, login_user, logout_user, login_required, current_user)
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 import pandas as pd
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
@@ -22,6 +23,9 @@ from sklearn.preprocessing import StandardScaler
 
 # --- App Configuration ---
 app = Flask(__name__)
+
+# Trust Render Proxy headers (X-Forwarded-Proto, X-Forwarded-For)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_for=1, x_host=1, x_port=1)
 
 # --- CORS Configuration ---
 frontend_url = os.environ.get('FRONTEND_URL')
@@ -86,31 +90,36 @@ login_manager = LoginManager(app)
 login_manager.init_app(app)
 app.config['SESSION_COOKIE_NAME'] = 'fitguide_session'
 
-@app.before_request
-def log_incoming_cookies():
-    app.logger.debug(f"--- Request: {request.method} {request.path} ---")
-    app.logger.debug(f"Cookies received: {list(request.cookies.keys())}")
-    if current_user.is_authenticated:
-        app.logger.debug(f"Current User: {current_user.username}")
-
 @app.after_request
-def set_cors_headers(response):
+def set_cors_headers_and_fix_cookies(response):
     origin = request.headers.get('Origin')
     if origin and ('.onrender.com' in origin or 'localhost' in origin or '127.0.0.1' in origin):
-        # Force these headers for trusted origins, overriding any flask-cors defaults
+        # Force these headers for trusted origins
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
         
-    if request.method == 'OPTIONS':
-        response.status_code = 204 # Standard for successful preflight
-    
-    # Log cookie issuance for debugging
-    set_cookie = response.headers.get('Set-Cookie')
-    if set_cookie:
-        app.logger.debug(f"Set-Cookie header found in response to {request.path}")
+        # This is the "nuclear option" for cross-site cookie rejection
+        cookies = response.headers.getlist('Set-Cookie')
+        if cookies:
+            response.headers.remove('Set-Cookie')
+            for cookie in cookies:
+                # Add SameSite=None if missing or different
+                if 'SameSite=' not in cookie:
+                    cookie += '; SameSite=None'
+                else:
+                    cookie = re.sub(r'SameSite=\w+', 'SameSite=None', cookie)
+                
+                # Add Secure if missing
+                if 'Secure' not in cookie:
+                    cookie += '; Secure'
+                
+                response.headers.add('Set-Cookie', cookie)
 
+    if request.method == 'OPTIONS':
+        response.status_code = 204
+        
     app.logger.debug(f"--- Response: {request.method} {request.path} -> {response.status_code} ---")
     return response
 
