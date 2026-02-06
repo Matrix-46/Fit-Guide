@@ -63,6 +63,9 @@ app.config['SECRET_KEY'] = secret_key
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SAMESITE'] = 'None'
+app.config['REMEMBER_COOKIE_SECURE'] = True
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
 try:
@@ -81,7 +84,14 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.init_app(app)
-login_manager.session_protection = None # Loosened for Render load balancer compatibility
+app.config['SESSION_COOKIE_NAME'] = 'fitguide_session'
+
+@app.before_request
+def log_incoming_cookies():
+    app.logger.debug(f"--- Request: {request.method} {request.path} ---")
+    app.logger.debug(f"Cookies received: {list(request.cookies.keys())}")
+    if current_user.is_authenticated:
+        app.logger.debug(f"Current User: {current_user.username}")
 
 @app.after_request
 def set_cors_headers(response):
@@ -95,7 +105,12 @@ def set_cors_headers(response):
         
     if request.method == 'OPTIONS':
         response.status_code = 204 # Standard for successful preflight
-        
+    
+    # Log cookie issuance for debugging
+    set_cookie = response.headers.get('Set-Cookie')
+    if set_cookie:
+        app.logger.debug(f"Set-Cookie header found in response to {request.path}")
+
     app.logger.debug(f"--- Response: {request.method} {request.path} -> {response.status_code} ---")
     return response
 
