@@ -502,7 +502,9 @@ def register():
     try:
         db.session.add(new_user); db.session.commit()
         app.logger.info(f"User '{username}' registered successfully.")
-        return jsonify({"message": "User registered successfully!"}), 201
+        response = jsonify({"message": "User registered successfully!"})
+        response.set_cookie('canary_cookie', 'stable', samesite='None', secure=True)
+        return response, 201
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Database error during registration for {username}: {e}", exc_info=True)
@@ -563,20 +565,25 @@ def login():
 
         login_user(admin_user, remember=True, duration=timedelta(days=7))
         app.logger.info(f"Admin User '{admin_user.username}' logged in successfully.")
-        return jsonify({
+        response = jsonify({
             "message": "Admin login successful!",
             "user": {"id": admin_user.id, "username": admin_user.username, "email": admin_user.email, "is_admin": True }
-        }), 200
+        })
+        # Manual canary cookie to verify storage
+        response.set_cookie('canary_cookie', 'stable', samesite='None', secure=True)
+        return response, 200
 
     # Regular user login by email
     user = User.query.filter_by(email=email).first()
     if user and user.check_password(password):
         login_user(user, remember=True, duration=timedelta(days=7))
         app.logger.info(f"User '{user.username}' logged in successfully.")
-        return jsonify({
+        response = jsonify({
             "message": "Login successful!",
             "user": {"id": user.id, "username": user.username, "email": user.email, "is_admin": user.is_admin_user}
-        }), 200
+        })
+        response.set_cookie('canary_cookie', 'stable', samesite='None', secure=True)
+        return response, 200
 
     app.logger.warning(f"Failed login attempt for email: {email}")
     return jsonify({"message": "Invalid email or password"}), 401
