@@ -50,8 +50,10 @@ CORS(app,
      expose_headers=["Content-Length", "X-CSRFToken"])
 
 @app.before_request
-def log_incoming_request():
-    app.logger.debug(f"--- Incoming Request: {request.method} {request.path} (Origin: {request.headers.get('Origin')}) ---")
+def debug_request_info():
+    app.logger.debug(f"--- Request: {request.method} {request.path} ---")
+    app.logger.debug(f"Secure: {request.is_secure}, Scheme: {request.scheme}, Origin: {request.headers.get('Origin')}")
+    app.logger.debug(f"Cookies: {list(request.cookies.keys())}")
 
 @app.errorhandler(Exception)
 def handle_error(e):
@@ -95,14 +97,10 @@ login_manager = LoginManager(app)
 login_manager.init_app(app)
 login_manager.session_protection = None # Loosened for Render load balancer compatibility
 
-@app.before_request
-def debug_request_info():
-    app.logger.debug(f"--- Request: {request.method} {request.path} ---")
-    app.logger.debug(f"Secure: {request.is_secure}, Origin: {request.headers.get('Origin')}")
-    app.logger.debug(f"Cookies: {list(request.cookies.keys())}")
-
 @app.after_request
 def finalize_response(response):
+    app.logger.debug(f"--- Finalizing Response for {request.path} ({response.status_code}) ---")
+    
     origin = request.headers.get('Origin')
     # Use dynamic regex matching for .onrender.com subdomains
     if origin and ('.onrender.com' in origin or 'localhost' in origin or '127.0.0.1' in origin):
@@ -111,9 +109,13 @@ def finalize_response(response):
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
         
+        # Log all current headers for debugging
+        # app.logger.debug(f"Current Headers: {dict(response.headers)}")
+
         # Aggressively ensure cookies are cross-site compatible
         cookies = response.headers.getlist('Set-Cookie')
         if cookies:
+            app.logger.debug(f"Found {len(cookies)} Set-Cookie headers.")
             response.headers.remove('Set-Cookie')
             for cookie in cookies:
                 new_cookie = cookie
@@ -129,14 +131,27 @@ def finalize_response(response):
                 if 'Partitioned' not in new_cookie:
                     new_cookie += '; Partitioned'
                 
-                app.logger.debug(f"Finalized Set-Cookie: {new_cookie}")
+                app.logger.debug(f"Finalized Cookie: {new_cookie}")
                 response.headers.add('Set-Cookie', new_cookie)
+        else:
+            if '/login' in request.path and response.status_code == 200:
+                app.logger.warning("WARNING: No Set-Cookie header found in successful login response!")
 
     if request.method == 'OPTIONS':
         response.status_code = 204
         
-    app.logger.debug(f"--- Response: {response.status_code} ---")
     return response
+
+@app.route('/api/session_debug')
+def session_debug():
+    return jsonify({
+        "is_authenticated": current_user.is_authenticated,
+        "user": current_user.username if current_user.is_authenticated else None,
+        "cookies_received": list(request.cookies.keys()),
+        "origin": request.headers.get('Origin'),
+        "is_secure": request.is_secure,
+        "scheme": request.scheme
+    })
 
 # --- Dataset Loading ---
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
