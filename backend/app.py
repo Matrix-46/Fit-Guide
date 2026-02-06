@@ -142,16 +142,9 @@ def finalize_response(response):
         
     return response
 
-@app.route('/api/session_debug')
-def session_debug():
-    return jsonify({
-        "is_authenticated": current_user.is_authenticated,
-        "user": current_user.username if current_user.is_authenticated else None,
-        "cookies_received": list(request.cookies.keys()),
-        "origin": request.headers.get('Origin'),
-        "is_secure": request.is_secure,
-        "scheme": request.scheme
-    })
+@app.route('/api/health')
+def health_check():
+    return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()}), 200
 
 # --- Dataset Loading ---
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -1335,6 +1328,21 @@ def init_db():
             app.logger.info("Database initialization complete.")
     except Exception as e:
         app.logger.error(f"Failed to initialize database: {e}")
+
+# --- Final Debug Routes ---
+@app.route('/api/session_audit_v5', methods=['GET'])
+def session_audit_v5():
+    """Nuclear debug route to verify session and cookies."""
+    return jsonify({
+        "is_authenticated": current_user.is_authenticated,
+        "user": current_user.username if current_user.is_authenticated else "Guest",
+        "cookies_received": list(request.cookies.keys()),
+        "auth_session_cookie_exists": 'fitguide_session' in request.cookies,
+        "headers": {k: v for k, v in request.headers.items() if k.lower() in ['origin', 'cookie', 'user-agent']},
+        "secure": request.is_secure,
+        "scheme": request.scheme,
+        "server_time": datetime.utcnow().isoformat()
+    }), 200
 
 # Run initialization on startup/import
 init_db()
