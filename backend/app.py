@@ -24,9 +24,42 @@ from sklearn.preprocessing import StandardScaler
 # --- App Configuration ---
 app = Flask(__name__)
 
-# IMMEDIATELY Trust Render Proxy headers (X-Forwarded-Proto, X-Forwarded-For)
-# Render uses 1 proxy level.
+# --- WSGI Middleware for Final Cookie Enforcement ---
+class CookieFixerMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        def custom_start_response(status, headers, exc_info=None):
+            new_headers = []
+            for name, value in headers:
+                if name.lower() == 'set-cookie':
+                    # Patch every cookie to be modern-browser compliant
+                    patched_value = value
+                    
+                    if 'SameSite=' not in patched_value:
+                        patched_value += '; SameSite=None'
+                    else:
+                        patched_value = re.sub(r'SameSite=[a-zA-Z]+', 'SameSite=None', patched_value)
+                    
+                    if 'Secure' not in patched_value:
+                        patched_value += '; Secure'
+                    
+                    if 'Partitioned' not in patched_value:
+                        patched_value += '; Partitioned'
+                    
+                    # Log the finalized header being sent to the browser
+                    print(f"WSGI [Set-Cookie] Patched: {patched_value}")
+                    new_headers.append((name, patched_value))
+                else:
+                    new_headers.append((name, value))
+            return start_response(status, new_headers, exc_info)
+        return self.app(environ, custom_start_response)
+
+# Apply ProxyFix FIRST
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_for=1, x_host=1, x_port=1)
+# Apply CookieFixerMiddleware SECOND (so it sees finalized headers)
+app.wsgi_app = CookieFixerMiddleware(app.wsgi_app)
 
 # Configure Log Level IMMEDIATELY
 logging.basicConfig(level=logging.DEBUG)
