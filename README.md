@@ -49,11 +49,12 @@ Access the live version of the project here: [https://fitguide-frontend-g06v.onr
 *   **Computer Vision (Pose Detection):** Real-time feedback using MediaPipe for over 5 different exercises.
 *   **Smart BMI Tracking:** Automatic calculation and categorization based on user profiles.
 *   **Daily Task Manager:** Integrated To-Do list for fitness goal tracking.
-*   **Google Calendar:** Seamless integration for workout reminders.
+*   **Smart Activity Logging:** Detailed history of workouts and diet performance.
 
 ### 🔐 Administration (Backend)
 *   **Centralized Analytics:** Track total users and workout logs in real-time.
 *   **User Management:** Full administrative control over registered accounts.
+*   **ML Model Diagnostics:** Advanced evaluation metrics (Accuracy, Precision, Recall, F1) for KNN models accessible via the developer API.
 *   **Secure Auth:** Robust session management and encrypted data storage.
 
 ---
