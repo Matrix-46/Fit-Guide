@@ -2,6 +2,8 @@
 
 ## Project Title: Fit-Guide, An AI Personalized Fitness and Nutrition Coach Using Machine Learning.
 
+**Live Demo:** [https://fitguide-frontend-g06v.onrender.com](https://fitguide-frontend-g06v.onrender.com)
+
 ---
 
 ## Table of Contents
