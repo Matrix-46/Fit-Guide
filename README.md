@@ -44,8 +44,8 @@ Access the live version of the project here: [https://fitguide-frontend-g06v.onr
 ## ✨ Key Features
 
 ### 🛍️ User Experience (Frontend)
-*   **AI Diet Engine:** Personalized 7-day meal plans (Breakfast, Lunch, Dinner) based on TDEE, BMI, and dietary preferences.
-*   **Workout Coach:** Goal-oriented exercise suggestions with integrated timers.
+*   **KNN-Powered Diet Engine:** Personalized 7-day meal plans (Breakfast, Lunch, Dinner) using KNN classification based on TDEE, BMI, and dietary preferences.
+*   **Workout Coach with KNN Prediction:** Goal-oriented exercise suggestions with integrated timers and KNN-based calorie burn estimations.
 *   **Computer Vision (Pose Detection):** Real-time feedback using MediaPipe for over 5 different exercises.
 *   **Smart BMI Tracking:** Automatic calculation and categorization based on user profiles.
 *   **Daily Task Manager:** Integrated To-Do list for fitness goal tracking.
@@ -118,8 +118,8 @@ To access the administrative features, use the following default credentials:
 
 ## 🧠 Machine Learning Components
 
-*   **Diet Recommendation:** Utilizes rule-based filtering and randomization on the `diet_dataset_1000.csv` to match target calories and preferences.
-*   **Workout Logic:** Selecting specialized exercises based on BMI and fitness goals.
+*   **Diet Recommendation:** Employs a **KNN classification model** on the `diet_dataset_1000.csv` to find recipes that perfectly match the user's target calorie profile and dietary preferences.
+*   **Workout Logic:** Uses **KNN prediction** to estimate calories burned based on user profiles and find patterns in the `fitness_dataset_1000.csv` for personalized workout recommendations.
 *   **Pose Detection:** Leveraging MediaPipe Pose for landmark detection and algorithmic posture assessment.
 
 ---
