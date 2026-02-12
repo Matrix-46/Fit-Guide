@@ -179,6 +179,75 @@ def finalize_response(response):
 def health_check():
     return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()}), 200
 
+@app.route('/api/db_health')
+def db_health_check():
+    """
+    Comprehensive database health check endpoint.
+    Shows database connection status, user count, and configuration details.
+    """
+    try:
+        with app.app_context():
+            # Get database URI (hide sensitive info)
+            db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+            if 'postgresql://' in db_uri or 'postgres://' in db_uri:
+                db_type = 'PostgreSQL'
+                # Mask password in URI
+                import re
+                masked_uri = re.sub(r'://([^:]+):([^@]+)@', r'://\1:****@', db_uri)
+            elif 'sqlite:///' in db_uri:
+                db_type = 'SQLite'
+                masked_uri = db_uri
+            else:
+                db_type = 'Unknown'
+                masked_uri = 'Unknown'
+            
+            # Try to query user count
+            try:
+                user_count = User.query.count()
+                db_accessible = True
+                error_msg = None
+            except Exception as e:
+                user_count = 0
+                db_accessible = False
+                error_msg = str(e)
+            
+            # Get admin user status
+            admin_email = os.environ.get('ADMIN_EMAIL', 'Not set')
+            admin_exists = False
+            if db_accessible:
+                try:
+                    admin_user = User.query.filter_by(email=admin_email).first()
+                    admin_exists = admin_user is not None
+                except:
+                    pass
+            
+            return jsonify({
+                "status": "healthy" if db_accessible else "unhealthy",
+                "database": {
+                    "type": db_type,
+                    "uri": masked_uri,
+                    "accessible": db_accessible,
+                    "error": error_msg
+                },
+                "users": {
+                    "total_count": user_count,
+                    "admin_configured": admin_email != 'Not set',
+                    "admin_exists": admin_exists
+                },
+                "environment": {
+                    "flask_env": os.environ.get('FLASK_ENV', 'Not set'),
+                    "database_url_set": os.environ.get('DATABASE_URL') is not None
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            }), 200 if db_accessible else 503
+    except Exception as e:
+        app.logger.error(f"Database health check failed: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }), 500
+
 # --- Dataset Loading ---
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DIET_DATASET_PATH = os.path.join(base_dir, 'datasets', 'diet_dataset_1000.csv')
@@ -500,14 +569,26 @@ def register():
     new_user.set_password(data['password'])
 
     try:
-        db.session.add(new_user); db.session.commit()
-        app.logger.info(f"User '{username}' registered successfully.")
-        response = jsonify({"message": "User registered successfully!"})
+        db.session.add(new_user)
+        db.session.commit()
+        app.logger.info(f"✅ User '{username}' (email: {email}) registered successfully with ID: {new_user.id}")
+        
+        # Immediately verify the user was saved to database
+        verification_user = User.query.filter_by(email=email).first()
+        if verification_user:
+            app.logger.info(f"✅ VERIFICATION: User '{username}' found in database immediately after commit (ID: {verification_user.id})")
+        else:
+            app.logger.error(f"❌ VERIFICATION FAILED: User '{username}' NOT found in database after commit!")
+        
+        response = jsonify({
+            "message": "User registered successfully!",
+            "user_id": new_user.id
+        })
         response.set_cookie('canary_cookie', 'stable', samesite='None', secure=True)
         return response, 201
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Database error during registration for {username}: {e}", exc_info=True)
+        app.logger.error(f"❌ Database error during registration for {username}: {e}", exc_info=True)
         return jsonify({"message": "Registration failed due to a server error."}), 500
 
 @app.route('/api/login', methods=['POST'])
@@ -575,9 +656,17 @@ def login():
 
     # Regular user login by email
     user = User.query.filter_by(email=email).first()
+    
+    if not user:
+        app.logger.warning(f"❌ Login failed: No user found with email '{email}'")
+        # Check total user count for debugging
+        total_users = User.query.count()
+        app.logger.info(f"📊 Total users in database: {total_users}")
+        return jsonify({"message": "Invalid email or password"}), 401
+    
     if user and user.check_password(password):
         login_user(user, remember=True, duration=timedelta(days=7))
-        app.logger.info(f"User '{user.username}' logged in successfully.")
+        app.logger.info(f"✅ User '{user.username}' (ID: {user.id}, email: {email}) logged in successfully.")
         response = jsonify({
             "message": "Login successful!",
             "user": {"id": user.id, "username": user.username, "email": user.email, "is_admin": user.is_admin_user}
@@ -585,7 +674,7 @@ def login():
         response.set_cookie('canary_cookie', 'stable', samesite='None', secure=True)
         return response, 200
 
-    app.logger.warning(f"Failed login attempt for email: {email}")
+    app.logger.warning(f"❌ Login failed for email '{email}': Incorrect password")
     return jsonify({"message": "Invalid email or password"}), 401
 
 @app.route('/api/logout', methods=['POST'])
