@@ -1313,9 +1313,15 @@ def update_admin_user(user_id):
         if 'is_admin' in data and user.id == current_user.id and not data['is_admin']:
             return jsonify({"message": "Cannot remove your own admin status"}), 400
         
+<<<<<<< HEAD
+        # Prevent modifying superadmin (unless you are a superadmin)
+        if user.is_superadmin and not current_user.is_superadmin:
+            return jsonify({"message": "Cannot modify superadmin user details"}), 403
+=======
         # Prevent modifying superadmin's admin status (unless you are a superadmin)
         if 'is_admin' in data and user.is_superadmin and not current_user.is_superadmin:
             return jsonify({"message": "Cannot modify superadmin's admin status"}), 403
+>>>>>>> cfffa9515017f8e59c887b22d0f80f8988a04290
         
         # Update fields
         if 'is_admin' in data and isinstance(data['is_admin'], bool):
@@ -1435,22 +1441,43 @@ def init_db():
             try:
                 admin = User.query.filter_by(email=admin_email).first()
                 if admin:
+<<<<<<< HEAD
+                    needs_update = False
+                    if not admin.is_admin_user:
+                        admin.is_admin_user = True
+                        needs_update = True
+                    if not admin.is_superadmin:
+                        admin.is_superadmin = True
+                        needs_update = True
+                    if needs_update:
+                        db.session.commit()
+                        app.logger.info(f"User with email '{admin_email}' found and ensured admin/superadmin status.")
+=======
                     if not admin.is_admin_user:
                         admin.is_admin_user = True
                         db.session.commit()
                         app.logger.info(f"User with email '{admin_email}' found and ensured admin status.")
+>>>>>>> cfffa9515017f8e59c887b22d0f80f8988a04290
                 else:
                     # Create a fresh admin user
                     admin = User(
                         username=admin_username, email=admin_email,
                         gender="other", age=30, height_cm=160, weight_kg=60,
                         diet_preference="any", activity_level="moderate", goals="maintenance",
+<<<<<<< HEAD
+                        is_admin_user=True, is_superadmin=True
+=======
                         is_admin_user=True
+>>>>>>> cfffa9515017f8e59c887b22d0f80f8988a04290
                     )
                     admin.set_password(admin_password)
                     db.session.add(admin)
                     db.session.commit()
+<<<<<<< HEAD
+                    app.logger.info(f"Admin user '{admin_email}' created with default password/superadmin status.")
+=======
                     app.logger.info(f"Admin user '{admin_email}' created with default password.")
+>>>>>>> cfffa9515017f8e59c887b22d0f80f8988a04290
             except Exception as e:
                 app.logger.error(f"Error initializing admin user: {e}")
 
